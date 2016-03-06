@@ -26,7 +26,6 @@ type Options struct {
 	User         string `long:"user" description:"username" ini-name:"username"`
 	Password     string `long:"password" description:"password" ini-name:"password"`
 	Host         string `long:"host" description:"nexus url" ini-name:"host"`
-	ExcludeRepos string `long:"exlude-repos" description:"exclude repos" ini-name:"exclude"`
 }
 
 type FilterOptions struct {
