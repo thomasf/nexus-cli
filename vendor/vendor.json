@@ -1,0 +1,46 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"path": "github.com/daviddengcn/go-colortext",
+			"revision": "3b18c8575a432453d41fdafb340099fff5bba2f7",
+			"revisionTime": "2015-07-20T05:18:42+08:00"
+		},
+		{
+			"path": "github.com/hanjos/nexus",
+			"revision": "a96457ef2e6234282f21e7d620dab2bab117dba4",
+			"revisionTime": "2015-02-09T16:34:58-02:00"
+		},
+		{
+			"path": "github.com/hanjos/nexus/credentials",
+			"revision": "a96457ef2e6234282f21e7d620dab2bab117dba4",
+			"revisionTime": "2015-02-09T16:34:58-02:00"
+		},
+		{
+			"path": "github.com/hanjos/nexus/search",
+			"revision": "a96457ef2e6234282f21e7d620dab2bab117dba4",
+			"revisionTime": "2015-02-09T16:34:58-02:00"
+		},
+		{
+			"path": "github.com/hanjos/nexus/util",
+			"revision": "a96457ef2e6234282f21e7d620dab2bab117dba4",
+			"revisionTime": "2015-02-09T16:34:58-02:00"
+		},
+		{
+			"path": "github.com/hashicorp/go-version",
+			"revision": "2e7f5ea8e27bb3fdf9baa0881d16757ac4637332",
+			"revisionTime": "2016-02-13T16:24:39-08:00"
+		},
+		{
+			"path": "github.com/jessevdk/go-flags",
+			"revision": "6b9493b3cb60367edd942144879646604089e3f7",
+			"revisionTime": "2016-02-27T10:34:14+01:00"
+		},
+		{
+			"path": "github.com/thomasf/lg",
+			"revision": "0576d1ac259b547e3754ac03335f8b65506ef251",
+			"revisionTime": "2015-09-14T12:57:51+02:00"
+		}
+	]
+}
