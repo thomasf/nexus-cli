@@ -9,23 +9,21 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
-	"reflect"
-	"sort"
 	"strings"
-
-	"github.com/hanjos/nexus"
+	// "github.com/hanjos/nexus"
 	"github.com/hanjos/nexus/credentials"
 	"github.com/hanjos/nexus/search"
-	version "github.com/hashicorp/go-version"
+	// "github.com/hanjos/nexus/search"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/thomasf/lg"
+	"github.com/thomasf/nexus-cli/pkg/artifact"
+	"github.com/thomasf/nexus-cli/pkg/repos/nexus"
 )
 
 type Options struct {
-	User         string `long:"user" description:"username" ini-name:"username"`
-	Password     string `long:"password" description:"password" ini-name:"password"`
-	Host         string `long:"host" description:"nexus url" ini-name:"host"`
+	User     string `long:"user" description:"username" ini-name:"username"`
+	Password string `long:"password" description:"password" ini-name:"password"`
+	Host     string `long:"host" description:"nexus url" ini-name:"host"`
 }
 
 type FilterOptions struct {
@@ -35,22 +33,21 @@ type FilterOptions struct {
 	POM      bool `long:"pom" description:"Show pom results"`
 }
 
-func (f *FilterOptions) Filter(artifacts []Artifact) []Artifact {
+func (f *FilterOptions) Filter(artifacts []artifact.Artifact) []artifact.Artifact {
 	if !f.POM {
 		artifacts = filterPOM(artifacts)
 	}
 	if f.Latest {
 		artifacts = getLatest(artifacts)
-		sort.Sort(BySemver(artifacts))
-
+		artifact.SortBySemver(artifacts)
 	}
 	if f.Release {
 		artifacts = getReleases(artifacts)
-		sort.Sort(BySemver(artifacts))
+		artifact.SortBySemver(artifacts)
+
 	}
 	if f.Snapshot {
 		artifacts = getSnapshots(artifacts)
-
 	}
 	return artifacts
 }
@@ -94,15 +91,15 @@ func main() {
 	}
 }
 
-func getReleases(artifacts []Artifact) []Artifact {
-	var result []Artifact
+func getReleases(artifacts []artifact.Artifact) []artifact.Artifact {
+	var result []artifact.Artifact
 
 	for _, v := range artifacts {
 		if !strings.HasSuffix(v.Version, "SNAPSHOT") {
-			if v.v == nil {
-				lg.Warningln("could not parse version from", v)
-				continue
-			}
+			// if v.v == nil {
+				// lg.Warningln("could not parse version from", v)
+				// continue
+			// }
 
 			result = append(result, v)
 		}
@@ -110,8 +107,8 @@ func getReleases(artifacts []Artifact) []Artifact {
 	return result
 }
 
-func getSnapshots(artifacts []Artifact) []Artifact {
-	var result []Artifact
+func getSnapshots(artifacts []artifact.Artifact) []artifact.Artifact {
+	var result []artifact.Artifact
 	for _, v := range artifacts {
 		if strings.HasSuffix(v.Version, "SNAPSHOT") {
 			result = append(result, v)
@@ -121,10 +118,10 @@ func getSnapshots(artifacts []Artifact) []Artifact {
 	return result
 }
 
-func getLatest(artifacts []Artifact) []Artifact {
-	var result []Artifact
+func getLatest(artifacts []artifact.Artifact) []artifact.Artifact {
+	var result []artifact.Artifact
 
-	byArtifact := make(map[string][]Artifact, 0)
+	byArtifact := make(map[string][]artifact.Artifact, 0)
 	for _, a := range getReleases(artifacts) {
 		if !strings.HasSuffix(a.Version, "SNAPSHOT") {
 			parts := []string{a.GroupID, a.ArtifactID, a.Extension, a.Classifier, a.RepositoryID}
@@ -133,14 +130,14 @@ func getLatest(artifacts []Artifact) []Artifact {
 		}
 	}
 	for _, v := range byArtifact {
-		sort.Sort(BySemver(v))
+		artifact.SortBySemver(v)
 		result = append(result, v[len(v)-1])
 	}
 	return result
 }
 
-func filterPOM(artifacts []Artifact) []Artifact {
-	var result []Artifact
+func filterPOM(artifacts []artifact.Artifact) []artifact.Artifact {
+	var result []artifact.Artifact
 	for _, v := range artifacts {
 		if v.Extension != "pom" {
 			result = append(result, v)
@@ -155,10 +152,13 @@ type SearchCommand struct {
 
 func (s *SearchCommand) Execute(args []string) error {
 	if len(args) < 0 {
-		searchrepo("")
 		return nil
 	}
-	artifacts, err := searchrepo(args[0])
+	client := nexus.Client{
+		NexusURL:    options.Host,
+		Credentials: credentials.BasicAuth(options.User, options.Password),
+	}
+	artifacts, err := client.Search(args[0])
 	if err != nil {
 		return err
 	}
@@ -180,116 +180,80 @@ type GetCommand struct {
 }
 
 func (s *GetCommand) Execute(args []string) error {
+	return errors.New("not done")
 
-	gav := args[0]
+	// gav := args[0]
 
-	creds := credentials.BasicAuth(options.User, options.Password)
-	n := nexus.New(options.Host, creds)
+	// client := nexus.Client{
+	// 	NexusURL:    options.Host,
+	// 	Credentials: credentials.BasicAuth(options.User, options.Password),
+	// }
+	// artifacts, err := client.Search(args[0])
+	// if err != nil {
+	// 	return err
+	// }
 
-	arts, err := n.Artifacts(ParseGAV(gav))
-	if err != nil {
-		lg.Fatal(err)
-	}
-	var artifacts []Artifact
-	for _, a := range arts {
-		art, err := newArtifact(a)
-		if err != nil {
-			return err
-		}
-		artifacts = append(artifacts, art)
-	}
-	artifacts = s.FilterOptions.Filter(artifacts)
+	// arts, err := n.Artifacts(ParseGAV(gav))
+	// if err != nil {
+	// 	lg.Fatal(err)
+	// }
+	// var artifacts []Artifact
+	// for _, a := range arts {
+	// 	art, err := newArtifact(a)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	artifacts = append(artifacts, art)
+	// }
+	// artifacts = s.FilterOptions.Filter(artifacts)
 
-	lg.Infoln(artifacts)
-	if len(artifacts) < 1 {
-		return errors.New("no matching artifact")
-	}
+	// lg.Infoln(artifacts)
+	// if len(artifacts) < 1 {
+	// 	return errors.New("no matching artifact")
+	// }
 
-	if s.Output != "" {
-		if len(artifacts) != 1 {
-			return errors.New("cannot use --out with multiple matches")
-		}
-		v := artifacts[0]
-		info, err := n.InfoOf(v.Artifact)
-		if err != nil {
-			lg.Fatal(err)
-		}
-		lg.Infoln(info.URL)
-		err = download(s.Output, info.URL, creds)
-		if err != nil {
-			lg.Fatal(err)
-		}
-		return nil
-	}
+	// if s.Output != "" {
+	// 	if len(artifacts) != 1 {
+	// 		return errors.New("cannot use --out with multiple matches")
+	// 	}
+	// 	v := artifacts[0]
+	// 	info, err := n.InfoOf(v.Artifact)
+	// 	if err != nil {
+	// 		lg.Fatal(err)
+	// 	}
+	// 	lg.Infoln(info.URL)
+	// 	err = download(s.Output, info.URL, creds)
+	// 	if err != nil {
+	// 		lg.Fatal(err)
+	// 	}
+	// 	return nil
+	// }
 
-	for _, v := range artifacts {
-		info, err := n.InfoOf(v.Artifact)
-		if err != nil {
-			lg.Fatal(err)
-		}
-		lg.Infoln(info.URL)
+	// for _, v := range artifacts {
+	// 	info, err := n.InfoOf(v.Artifact)
+	// 	if err != nil {
+	// 		lg.Fatal(err)
+	// 	}
+	// 	lg.Infoln(info.URL)
 
-		dirname := filepath.Join(v.GroupID, v.ArtifactID, v.Version)
-		filename := filepath.Base(info.URL)
-		err = os.MkdirAll(dirname, 0775)
-		if err != nil {
-			lg.Fatal(err)
-		}
+	// 	dirname := filepath.Join(v.GroupID, v.ArtifactID, v.Version)
+	// 	filename := filepath.Base(info.URL)
+	// 	err = os.MkdirAll(dirname, 0775)
+	// 	if err != nil {
+	// 		lg.Fatal(err)
+	// 	}
 
-		err = download(filepath.Join(dirname, filename), info.URL, creds)
-		if err != nil {
-			lg.Fatal(err)
-		}
+	// 	err = download(filepath.Join(dirname, filename), info.URL, creds)
+	// 	if err != nil {
+	// 		lg.Fatal(err)	// 	}
 
-	}
+	// }
 
-	return nil
+	// return nil
 
 }
 
 var getCommand GetCommand
-
-
-func searchrepo(q string) ([]Artifact, error) {
-	var results []Artifact
-	// n := nexus.New(options.Host, credentials.None)
-	n := nexus.New(options.Host, credentials.BasicAuth(options.User, options.Password))
-
-	var RepositoryID string
-	if pos := strings.LastIndex(q, "@"); pos != -1 {
-		RepositoryID = q[pos+1:]
-		q = q[:pos]
-	}
-
-	var crit search.Criteria
-
-	if q == "" {
-		crit = search.All
-	} else if RepositoryID != "" {
-		crit = search.InRepository{
-			RepositoryID: RepositoryID,
-			Criteria:     search.ByKeyword(q),
-		}
-	} else {
-		crit = search.ByKeyword(q)
-	}
-
-	artifacts, err := n.Artifacts(
-		crit,
-	)
-	if err != nil {
-		fmt.Printf("%v: %v", reflect.TypeOf(err), err)
-		return results, nil
-	}
-	for _, a := range artifacts {
-		art, err := newArtifact(a)
-		if err != nil {
-			return (make([]Artifact, 0)), err
-		}
-		results = append(results, art)
-	}
-	return results, nil
-}
 
 // String implements the fmt.Stringer interface, as per Maven docs
 // (http://maven.apache.org/pom.html#Maven_Coordinates).
@@ -338,53 +302,6 @@ func ParseGAV(gav string) search.Criteria {
 		return c
 	}
 	return coords
-}
-
-type BySemver []Artifact
-
-func (v BySemver) Len() int {
-	return len(v)
-}
-
-func (v BySemver) Less(i, j int) bool {
-	return v[i].LessThan(v[j])
-}
-
-func (v BySemver) Swap(i, j int) {
-	v[i], v[j] = v[j], v[i]
-}
-
-// GreaterThan compares the semver version number
-func (a *Artifact) GreaterThan(b Artifact) bool {
-	return a.v.GreaterThan(b.v)
-}
-
-// LessThan compares the semver version number
-func (a *Artifact) LessThan(b Artifact) bool {
-	return a.v.LessThan(b.v)
-}
-
-// Equal compares the semver version number, nothing else.
-func (a *Artifact) Equal(b Artifact) bool {
-	return a.v.Equal(b.v)
-}
-
-// Artifact combines nexus artifact with semver features
-type Artifact struct {
-	*nexus.Artifact
-	v *version.Version
-}
-
-func newArtifact(a *nexus.Artifact) (Artifact, error) {
-	v, _ := version.NewVersion(a.Version)
-	// if err != nil {
-	// return nil, err
-
-	// }
-	return Artifact{
-		Artifact: a,
-		v:        v,
-	}, nil
 }
 
 func download(dst, url string, creds credentials.Credentials) error {
