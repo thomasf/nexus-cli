@@ -2,3 +2,12 @@ build:
   image: golang:1.6
   commands:
     - ./ci.sh runci
+
+publish:
+  github_release:
+    api_key: $$GITHUB_API_KEY
+    files: build/*.gz
+    file_exists: fail
+    # draft: true
+    when:
+      event: tag
